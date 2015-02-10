@@ -34,15 +34,14 @@ char *generate_string_with_cpu_info(void)
 }
 
 // LL API
-int  add_to_list(char *buf); // function responsible for freeing buf
-
+int  add_to_list(int pid); 
 char *cpu_info_string = NULL;
 int cpu_info_string_size = 0;
 char pid_receive[PID_SIZE];
 
 int read_proc(struct file *filp,char *buf,size_t count,loff_t *offp ) 
 {
-
+    printk(KERN_INFO "read_proc() function called \n");
 	cpu_info_string = generate_string_with_cpu_info();
 	cpu_info_string_size = strlen(cpu_info_string);
 	// we assume this case for our requirements. If the size of the output
