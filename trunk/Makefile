@@ -15,8 +15,8 @@ obj-m:= mp1.o
 modules:
 	$(MAKE) -C $(KERNEL_SRC) M=$(SUBDIR) modules
 
-app: userapp.c userapp.h
-	$(GCC) -o userapp userapp.c
+app: my_factorial.c my_factorial.h
+	$(GCC) -o my_factorial my_factorial.c
 
 clean:
-	$(RM) -f userapp *~ *.ko *.o *.mod.c Module.symvers modules.order
+	$(RM) -f my_factorial *~ *.ko *.o *.mod.c Module.symvers modules.order
