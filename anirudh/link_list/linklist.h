@@ -2,7 +2,7 @@
 #define DUPLICATE 1000 // indicate duplicate entry in the list
                        // starts from 1000 to avoid other return
 					   // codes in the kernel.
-					   
+#define NOT_FOUND 1001					   
 
 /* initilalize_list() to be used before using this module. Ideally,
 this should be called from the module init function. */
@@ -50,3 +50,6 @@ int ll_is_pid_in_list(int pid);
    caller function should free the memory after use
 */
 int ll_get_pids(int **pids, int *count);
+
+/* delete pid from list */
+int ll_delete_pid(int pid);

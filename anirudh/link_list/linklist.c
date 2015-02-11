@@ -120,3 +120,17 @@ int ll_get_pids(int **pids, int *count)
 	}
 	return SUCCESS;
 }
+
+int ll_delete_pid(int pid)
+{
+	struct process_info *proc_iter = NULL;
+	list_for_each_entry(proc_iter,&proc_list.list,list) {
+		if (proc_iter->pid == pid )
+		{
+			list_del(&proc_iter->list);
+			kfree(proc_iter);
+			return SUCCESS;
+		}
+	}
+	return NOT_FOUND;
+}
