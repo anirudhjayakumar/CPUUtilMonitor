@@ -45,3 +45,8 @@ int ll_cleanup(void);
 /* is_pid_in_list(int pid) see if pid is present in the list.
 */
 int ll_is_pid_in_list(int pid);
+
+/* get_pids() returns an array of pids with the pid count 
+   caller function should free the memory after use
+*/
+int ll_get_pids(int **pids, int *count);

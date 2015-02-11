@@ -22,6 +22,7 @@ struct process_info {
 
 // declare and intilaize the list
 static struct process_info proc_list;
+static int list_size = 0;
 
 int ll_initialize_list(void)
 {
@@ -82,6 +83,7 @@ int ll_add_to_list(int pid)
 		INIT_LIST_HEAD(&new_proc->list);
 		list_add_tail(&(new_proc->list),&(proc_list.list));
 		printk(KERN_INFO "added pid=%d to list\n",pid);
+		list_size++;
 		return SUCCESS;
 	}
 	else
@@ -103,3 +105,18 @@ int ll_cleanup(void)
     return SUCCESS;
 }
 
+int ll_get_pids(int **pids, int *count)
+{
+	//create memory for list_size of pids
+	*count = list_size;
+	if ( list_size > 0 )
+	{
+		*pids = (int *)kmalloc(sizeof(int)*list_size,GFP_KERNEL);
+		struct process_info *proc_iter = NULL;
+		int index = 0;
+		list_for_each_entry(proc_iter,&proc_list.list,list) {
+			(*pids)[index++] = proc_iter->pid;
+		}
+	}
+	return SUCCESS;
+}
