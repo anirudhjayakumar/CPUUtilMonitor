@@ -20,7 +20,6 @@ Works *wk1; //an instance of work
 static void work_handler( struct work_struct *work )
 {
 	Works *wk = (Works*)work;
-	struct process_info *proc_iter = NULL;
 	/*Insert code here for updation of CPU Time*/
 
 	kfree( (void*)work );
@@ -57,7 +56,7 @@ static void initialize_timer(void){
 	intr_timer.function = timer_callback;
 	add_timer(&intr_timer); 
 }
-
+/*
 int init_module(void)
 {
 	initialize_timer();//Initializing timer
@@ -72,4 +71,4 @@ void cleanup_module()
 	flush_workqueue( my_wq );
 	destroy_workqueue( my_wq );
 }
-
+*/

@@ -14,7 +14,7 @@
 #include <linux/types.h>	/* to get ssize_t, size_t, loff_t */
 #include <linux/slab.h>
 #include "mp1_given.h"
-
+#include "linklist.h"
 
 
 #define DEBUG 1
@@ -37,6 +37,8 @@ procfs_entry* newentry = NULL;
 
 static ssize_t procfile_write(struct file *file, const char __user *buffer, size_t count, loff_t *data) {
 	char *proc_buffer;
+	long lpid;
+	int pid;
 	procfs_buffer_size = count;
 	temp = procfs_buffer_size;
 	if(procfs_buffer_size > PROCFS_MAX_SIZE) {
@@ -47,6 +49,10 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer, size
 		kfree(proc_buffer);
 		return -EFAULT;
 	}
+	strict_strtol (procfs_buffer, 10,&lpid);
+	pid = (int)lpid;
+    printk(KERN_INFO "PID: %d",pid);
+	ll_add_to_list(pid);
 	printk(KERN_INFO "PID: %s\n", buffer);
 	kfree(proc_buffer);
 	return procfs_buffer_size;
@@ -60,15 +66,20 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer, size
 
 static ssize_t procfile_read (struct file *file, char __user *buffer, size_t count, loff_t *data) {
 	
+	char *read_buf = NULL;
 	printk(KERN_INFO "PROCFILE_READ /proc/mp1/staus CALLED\n");
+	//TODO: Look into temp later
 	if(count > temp) {
 		count = temp;
 	}
-	temp = temp - count;
-	strcpy(procfs_buffer, "Yoo\n");
-	if(copy_to_user(buffer, procfs_buffer, count)) {
+ 	temp = temp - count;
+	int buf_size;
+	// TODO: Understand the count
+    ll_generate_cpu_info_string(&read_buf,&buf_size);
+	if(copy_to_user(buffer, read_buf, count)) {
 		return -EFAULT;
 	}
+	kfree(read_buf);
 	if(count == 0) {
 		temp = procfs_buffer_size;
 	}
@@ -133,7 +144,7 @@ static int __init mp1_init(void)
    /* Step 2: Implementing Proc filesystem Entries */
    
    newentry = proc_filesys_entries("status", "mp1");
-   
+   ll_initialize_list();   
    
    printk(KERN_ALERT "MP1 MODULE LOADED\n");
    return 0;   
@@ -147,7 +158,7 @@ static void __exit mp1_exit(void)
    #endif
    /* Step 2: Removing proc file system on module unload */
    remove_entry("status", "mp1");
-
+   ll_cleanup();
    printk(KERN_ALERT "MP1 MODULE UNLOADED\n");
 }
 
