@@ -3,6 +3,7 @@
 #include <linux/init.h>      // included for __init and __exit macros
 #include <linux/list.h>
 #include <linux/slab.h>
+#include <linux/rwsem.h>
 
 #include "common.h"
 #include "linklist.h"
@@ -20,24 +21,34 @@ struct process_info {
 	*/
 };
 
+// read-write lock
+struct rw_semaphore *sem = NULL;
+
+
 // declare and intilaize the list
 static struct process_info proc_list;
 static int list_size = 0;
 
 int ll_initialize_list(void)
 {
+	// intialize the linklist
 	INIT_LIST_HEAD(&proc_list.list);
+	
+	// initialize the rwsem
+	init_rwsem(sem);
 	return SUCCESS;
 }
 
 
 int ll_is_pid_in_list(int pid)
 {
+	down_read(sem); //read lock acquire
 	struct process_info *proc_iter = NULL;
 	list_for_each_entry(proc_iter,&proc_list.list,list) {
 		if(proc_iter->pid == pid) 
 			return TRUE;
 	}
+	up_read(sem); //read lock release
 	return FALSE;
 }
 
@@ -46,9 +57,11 @@ int ll_generate_cpu_info_string(char **buf, int *count_)
 	*buf = (char *)kmalloc(BUF_SIZE, GFP_KERNEL);
 	int count = 0;
 	struct process_info *proc_iter = NULL;
+	down_read(sem); // acquire read lock
 	list_for_each_entry(proc_iter,&proc_list.list,list) {
 		count += sprintf(*buf+count,"%d %lu\n",proc_iter->pid,proc_iter->cpu_time);
 	}
+	up_read(sem); // release read lock
     *count_ = count;
 	return SUCCESS;
 
@@ -59,6 +72,7 @@ int ll_update_time(int pid,unsigned long cpu_use)
 {
 	printk(KERN_INFO "update_time starts for pid=%d\n",pid);
 	struct process_info *proc_iter = NULL;
+	down_write(sem); // acquire write lock
 	list_for_each_entry(proc_iter,&proc_list.list,list) {
 		 if( proc_iter->pid == pid )
 		 {
@@ -67,6 +81,7 @@ int ll_update_time(int pid,unsigned long cpu_use)
 		 	 return SUCCESS;
 		 }
 	}
+	up_write(sem); // release write lock
 	printk(KERN_INFO "update_time() pid=%d not found in the list\n",pid);
 	return FAIL;
 }
@@ -81,7 +96,9 @@ int ll_add_to_list(int pid)
         new_proc->pid = pid;
 		new_proc->pid = 0;
 		INIT_LIST_HEAD(&new_proc->list);
+		down_write(sem);
 		list_add_tail(&(new_proc->list),&(proc_list.list));
+		up_write(sem);
 		printk(KERN_INFO "added pid=%d to list\n",pid);
 		list_size++;
 		return SUCCESS;
@@ -114,9 +131,11 @@ int ll_get_pids(int **pids, int *count)
 		*pids = (int *)kmalloc(sizeof(int)*list_size,GFP_KERNEL);
 		struct process_info *proc_iter = NULL;
 		int index = 0;
+		down_read(sem); // acquire read lock
 		list_for_each_entry(proc_iter,&proc_list.list,list) {
 			(*pids)[index++] = proc_iter->pid;
 		}
+		up_read(sem);
 	}
 	return SUCCESS;
 }
@@ -124,6 +143,7 @@ int ll_get_pids(int **pids, int *count)
 int ll_delete_pid(int pid)
 {
 	struct process_info *proc_iter = NULL;
+    down_write(sem);	
 	list_for_each_entry(proc_iter,&proc_list.list,list) {
 		if (proc_iter->pid == pid )
 		{
@@ -132,5 +152,6 @@ int ll_delete_pid(int pid)
 			return SUCCESS;
 		}
 	}
+	up_write(sem);
 	return NOT_FOUND;
 }

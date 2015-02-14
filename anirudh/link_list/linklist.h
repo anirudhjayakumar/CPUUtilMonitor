@@ -1,4 +1,8 @@
-/* this file contains the interfaces to the linklist module */
+/* this file contains the interfaces to the linklist module 
+   The functions in the file are all thread-safe. They use 
+   read-write semaphores
+*/
+
 #define DUPLICATE 1000 // indicate duplicate entry in the list
                        // starts from 1000 to avoid other return
 					   // codes in the kernel.
