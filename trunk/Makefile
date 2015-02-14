@@ -10,7 +10,9 @@ RM:=rm
 
 all: clean modules app
 
-obj-m:= mp1.o
+obj-m += mp1.o
+obj-m += linklist.o
+obj-m += Work_Queue.o
 
 modules:
 	$(MAKE) -C $(KERNEL_SRC) M=$(SUBDIR) modules
