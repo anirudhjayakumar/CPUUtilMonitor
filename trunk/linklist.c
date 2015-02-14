@@ -30,12 +30,17 @@ static struct process_info proc_list;
 static int list_size = 0;
 
 int ll_initialize_list(void)
-{
+{ 
+	printk(KERN_INFO "Linklist initialize begin\n");
 	// intialize the linklist
 	INIT_LIST_HEAD(&proc_list.list);
 	
+	printk(KERN_INFO "Linklist initialize done\n");
 	// initialize the rwsem
+	printk(KERN_INFO "RW lock initialize begin\n");
+	sem  = (struct rw_semaphore*)kmalloc(sizeof(struct rw_semaphore),GFP_KERNEL);
 	init_rwsem(sem);
+	printk(KERN_INFO "RW lock initialize done\n");
 	return SUCCESS;
 }
 
@@ -118,6 +123,7 @@ int ll_cleanup(void)
 		list_del(&proc_iter->list);
 		kfree(proc_iter);
 	}
+	kfree(sem);
 	printk(KERN_INFO "linklist cleanup ends\n");
     return SUCCESS;
 }
