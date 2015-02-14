@@ -6,7 +6,20 @@
 #include<linux/mutex.h>
 #include <linux/pid.h>
 #include "common.h"
+#include "linklist.h"
+#include <linux/sched.h>
+#include <linux/fs_struct.h>
 #define find_task_by_pid(nr) pid_task(find_vpid(nr), PIDTYPE_PID)
+static struct timer_list intr_timer;
+
+/*Work Queue:- my_wq*/
+static struct workqueue_struct *my_wq;
+//creating work element:- work
+typedef struct {
+	struct work_struct work;
+	int number;
+} Works;
+Works *wk1; //an instance of work
 
 //THIS FUNCTION RETURNS 0 IF THE PID IS VALID AND THE CPU TIME IS SUCCESFULLY RETURNED BY THE PARAMETER CPU_USE. OTHERWISE IT RETURNS -1
 
@@ -28,30 +41,21 @@ int get_cpu_use(int pid, unsigned long *cpu_use)
    }
 }
 
-/*Work Queue:- my_wq*/
-static struct workqueue_struct *my_wq;
-
-//creating work element:- work
-typedef struct {
-	struct work_struct work;
-	int number;
-} Works;
-Works *wk1; //an instance of work
 
 //Work handler to update CPU time in Linked List
-
-static void work_handler( struct work_struct *work )
+void work_handler( struct work_struct *work )
 {
+	int *pids = NULL;
+        int count = 0;
+   	int index,pid;
+        unsigned long cpu_time;
 	Works *wk = (Works*)work;
 	/*Insert code here for updation of CPU Time*/
     // get the pids
-    int *pids = NULL;
-	int count = 0;
-    int index,pid;
-	unsigned long cpu_time;
 	ll_get_pids(&pids,&count);
     for (index = 0; index <count; ++index)
 	{
+
 		pid = pids[index];
 
 		if( get_cpu_use(pid,&cpu_time) == SUCCESS )
@@ -67,7 +71,7 @@ static void work_handler( struct work_struct *work )
 	// update the cpu time
 	// if possible, if pid not there delete from list 
 	kfree( (void*)work );
-
+}
 
 /** function to create workqueue*/
 void create_work_queue(void)
@@ -84,15 +88,13 @@ void create_work_queue(void)
 	}
 }
 
-static struct timer_list intr_timer;
-
-static void timer_callback(unsigned long data){
+void timer_callback(unsigned long data){
 	queue_work( my_wq, &wk1->work );
 	mod_timer(&intr_timer,jiffies+5*HZ);
 }
 
 /* Function to Initialize Timer*/
-static void initialize_timer(void){
+void initialize_timer(void){
 	int wait_time = 5;
 	init_timer(&intr_timer);
 	intr_timer.expires = jiffies+wait_time*HZ;
