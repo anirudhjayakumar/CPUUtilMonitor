@@ -42,8 +42,8 @@ int ll_initialize_list(void)
 
 int ll_is_pid_in_list(int pid)
 {
-	down_read(sem); //read lock acquire
 	struct process_info *proc_iter = NULL;
+	down_read(sem); //read lock acquire
 	list_for_each_entry(proc_iter,&proc_list.list,list) {
 		if(proc_iter->pid == pid) 
 			return TRUE;
@@ -54,9 +54,9 @@ int ll_is_pid_in_list(int pid)
 
 int ll_generate_cpu_info_string(char **buf, int *count_)
 {
-	*buf = (char *)kmalloc(BUF_SIZE, GFP_KERNEL);
 	int count = 0;
 	struct process_info *proc_iter = NULL;
+	*buf = (char *)kmalloc(BUF_SIZE, GFP_KERNEL);
 	down_read(sem); // acquire read lock
 	list_for_each_entry(proc_iter,&proc_list.list,list) {
 		count += sprintf(*buf+count,"%d %lu\n",proc_iter->pid,proc_iter->cpu_time);
@@ -70,8 +70,8 @@ int ll_generate_cpu_info_string(char **buf, int *count_)
 
 int ll_update_time(int pid,unsigned long cpu_use)
 {
-	printk(KERN_INFO "update_time starts for pid=%d\n",pid);
 	struct process_info *proc_iter = NULL;
+	printk(KERN_INFO "update_time starts for pid=%d\n",pid);
 	down_write(sem); // acquire write lock
 	list_for_each_entry(proc_iter,&proc_list.list,list) {
 		 if( proc_iter->pid == pid )
@@ -112,8 +112,8 @@ int ll_add_to_list(int pid)
 
 int ll_cleanup(void)
 {
-	printk(KERN_INFO "linklist cleanup starts\n");
 	struct process_info *proc_iter = NULL;
+	printk(KERN_INFO "linklist cleanup starts\n");
 	list_for_each_entry(proc_iter,&proc_list.list,list) {
 		list_del(&proc_iter->list);
 		kfree(proc_iter);
@@ -125,12 +125,12 @@ int ll_cleanup(void)
 int ll_get_pids(int **pids, int *count)
 {
 	//create memory for list_size of pids
+	struct process_info *proc_iter = NULL;
+	int index = 0;
 	*count = list_size;
 	if ( list_size > 0 )
 	{
 		*pids = (int *)kmalloc(sizeof(int)*list_size,GFP_KERNEL);
-		struct process_info *proc_iter = NULL;
-		int index = 0;
 		down_read(sem); // acquire read lock
 		list_for_each_entry(proc_iter,&proc_list.list,list) {
 			(*pids)[index++] = proc_iter->pid;
