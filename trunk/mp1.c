@@ -12,6 +12,7 @@
 #include <linux/init.h>		/* For using the __init and __exit */
 #include <asm/uaccess.h>	/* for copy_from_user and copy_to_user */
 #include <linux/types.h>	/* to get ssize_t, size_t, loff_t */
+#include <linux/slab.h>
 #include "mp1_given.h"
 
 
@@ -35,15 +36,19 @@ procfs_entry* newentry = NULL;
  */
 
 static ssize_t procfile_write(struct file *file, const char __user *buffer, size_t count, loff_t *data) {
+	char *proc_buffer;
 	procfs_buffer_size = count;
 	temp = procfs_buffer_size;
 	if(procfs_buffer_size > PROCFS_MAX_SIZE) {
 		procfs_buffer_size = PROCFS_MAX_SIZE;
 	}
-	if(copy_from_user(procfs_buffer, buffer, procfs_buffer_size)) {
+	proc_buffer = (char *)kmalloc(count + 1, GFP_KERNEL);
+	if(copy_from_user(proc_buffer, buffer, procfs_buffer_size)) {
+		kfree(proc_buffer);
 		return -EFAULT;
 	}
 	printk(KERN_INFO "PID: %s\n", buffer);
+	kfree(proc_buffer);
 	return procfs_buffer_size;
 
 }
@@ -60,6 +65,7 @@ static ssize_t procfile_read (struct file *file, char __user *buffer, size_t cou
 		count = temp;
 	}
 	temp = temp - count;
+	strcpy(procfs_buffer, "Yoo\n");
 	if(copy_to_user(buffer, procfs_buffer, count)) {
 		return -EFAULT;
 	}
