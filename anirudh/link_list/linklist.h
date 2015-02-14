@@ -57,3 +57,6 @@ int ll_get_pids(int **pids, int *count);
 
 /* delete pid from list */
 int ll_delete_pid(int pid);
+
+/* print the contents of the list to kernel logs */
+void ll_print_list(void);

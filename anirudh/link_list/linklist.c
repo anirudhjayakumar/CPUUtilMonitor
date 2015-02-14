@@ -155,3 +155,12 @@ int ll_delete_pid(int pid)
 	up_write(sem);
 	return NOT_FOUND;
 }
+
+void ll_print_list(void)
+{
+	char **buf = NULL;
+	int count = 0;
+	ll_generate_cpu_info_string(buf,&count);
+	printk(KERN_INFO "%s",*buf);
+	kfree(*buf);
+}
