@@ -140,7 +140,7 @@ static int __init mp1_init(void)
    #endif
    
    /* Step 1: Implementing a Hello World Kernel Module */
-   printk("Hello World Kernel Module");
+   printk("Module init called");
    /* Step 2: Implementing Proc filesystem Entries */
    
    newentry = proc_filesys_entries("status", "mp1");
