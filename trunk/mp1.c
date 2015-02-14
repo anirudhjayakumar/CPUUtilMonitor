@@ -51,7 +51,7 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer, size
 	}
 	strict_strtol (procfs_buffer, 10,&lpid);
 	pid = (int)lpid;
-    printk(KERN_INFO "PID: %d",pid);
+    	printk(KERN_INFO "PID: %d",pid);
 	ll_add_to_list(pid);
 	printk(KERN_INFO "PID: %s\n", buffer);
 	kfree(proc_buffer);
@@ -67,13 +67,13 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer, size
 static ssize_t procfile_read (struct file *file, char __user *buffer, size_t count, loff_t *data) {
 	
 	char *read_buf = NULL;
+	int buf_size;
 	printk(KERN_INFO "PROCFILE_READ /proc/mp1/staus CALLED\n");
 	//TODO: Look into temp later
 	if(count > temp) {
 		count = temp;
 	}
  	temp = temp - count;
-	int buf_size;
 	// TODO: Understand the count
     ll_generate_cpu_info_string(&read_buf,&buf_size);
 	if(copy_to_user(buffer, read_buf, count)) {
@@ -158,7 +158,7 @@ static void __exit mp1_exit(void)
    #endif
    /* Step 2: Removing proc file system on module unload */
    remove_entry("status", "mp1");
-   ll_cleanup();
+   //ll_cleanup();
    printk(KERN_ALERT "MP1 MODULE UNLOADED\n");
 }
 
