@@ -10,7 +10,7 @@
 
 /* initilalize_list() to be used before using this module. Ideally,
 this should be called from the module init function. */
-extern int ll_initialize_list(void);
+int ll_initialize_list(void);
 
 
 

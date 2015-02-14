@@ -131,6 +131,10 @@ static void remove_entry(char *procname, char *parent) {
 	remove_proc_entry(parent, NULL);
 }
 
+int init_here()
+{
+	ll_initialize_list();
+}
 
 // mp1_init - Called when module is loaded
 static int __init mp1_init(void)
@@ -144,7 +148,7 @@ static int __init mp1_init(void)
    /* Step 2: Implementing Proc filesystem Entries */
    
    newentry = proc_filesys_entries("status", "mp1");
-   ll_initialize_list();   
+   init_here();  
    
    printk(KERN_ALERT "MP1 MODULE LOADED\n");
    return 0;   
