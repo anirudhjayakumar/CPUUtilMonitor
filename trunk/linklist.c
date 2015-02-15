@@ -29,7 +29,7 @@ struct rw_semaphore *sem = NULL;
 static struct process_info proc_list;
 static int list_size = 0;
 
-int ll_list_size() {
+int ll_list_size(void) {
 	return list_size;
 }
 
