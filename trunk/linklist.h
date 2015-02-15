@@ -60,3 +60,5 @@ int ll_delete_pid(int pid);
 
 /* print the contents of the list to kernel logs */
 void ll_print_list(void);
+
+int ll_list_size();

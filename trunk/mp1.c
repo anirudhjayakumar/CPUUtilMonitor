@@ -63,20 +63,17 @@ static ssize_t procfile_read (struct file *file, char __user *buffer, size_t cou
 	int buf_size;
 	printk(KERN_INFO "PROCFILE_READ /proc/mp1/staus CALLED\n");
 	//TODO: Look into temp later
-	if(count > temp) {
-		count = temp;
-	}
- 	temp = temp - count;
 	// TODO: Understand the count
     ll_generate_cpu_info_string(&read_buf,&buf_size);
-	if(copy_to_user(buffer, read_buf, count)) {
+	printk(KERN_INFO "read buffer: %s",read_buf);
+	if(copy_to_user(buffer, read_buf,buf_size )) {
 		return -EFAULT;
 	}
 	kfree(read_buf);
 	if(count == 0) {
 		temp = procfs_buffer_size;
 	}
-	return count;
+	return 0;
 }
 /* Associating appropriate proc file system read write function
  * to read and write into /proc/mp1/status

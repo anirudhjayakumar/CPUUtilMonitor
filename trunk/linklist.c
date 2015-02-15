@@ -29,6 +29,10 @@ struct rw_semaphore *sem = NULL;
 static struct process_info proc_list;
 static int list_size = 0;
 
+int ll_list_size() {
+	return list_size;
+}
+
 int ll_initialize_list(void)
 { 
 	printk(KERN_INFO "Linklist initialize begin\n");
@@ -66,8 +70,11 @@ int ll_generate_cpu_info_string(char **buf, int *count_)
 	list_for_each_entry(proc_iter,&proc_list.list,list) {
 		count += sprintf(*buf+count,"%d %lu\n",proc_iter->pid,proc_iter->cpu_time);
 	}
+	(*buf)[count] = '\0';
 	up_read(sem); // release read lock
-    *count_ = count;
+	printk(KERN_INFO "===========generate string(): count=%d\n", count + 1);
+	printk(KERN_INFO "===========String: %s\n",*buf);
+    *count_ = count + 1;
 	return SUCCESS;
 
 }

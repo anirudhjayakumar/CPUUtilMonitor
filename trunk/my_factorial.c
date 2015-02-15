@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
 	/* Calculating factorial from 0 to the max number iteratively */	
 	NumberRange = atoi(argv[1]);
 	printf("Calculating Factorial Number Range: 0 - %d.\n", NumberRange);
-	for (o_o_index = 0;o_o_index < 10000; ++o_o_index) {
+	for (o_o_index = 0;o_o_index < 1000; ++o_o_index) {
 	for (outer_index = 0;outer_index < 100000; ++outer_index) {
 		for(iterator_1 = 0; iterator_1 <= NumberRange; iterator_1++) {
 			if(iterator_1 == 0) {
