@@ -60,21 +60,37 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer, size
 static ssize_t procfile_read (struct file *file, char __user *buffer, size_t count, loff_t *data) {
 	
 	char *read_buf = NULL;
+	ssize_t len = count;
 	int buf_size;
+	ssize_t retVal = 0;
+	unsigned long ret = 0;
 	printk(KERN_INFO "PROCFILE_READ /proc/mp1/staus CALLED\n");
 	//TODO: Look into temp later
-	// TODO: Understand the count
-    ll_generate_cpu_info_string(&read_buf,&buf_size);
-	printk(KERN_INFO "=============read buffer: %s",read_buf);
-	if(copy_to_user(buffer, read_buf,buf_size )) {
+	//TODO: Understand the count
+
+	//printk(KERN_INFO "=============read buffer: %s",read_buf);
+
+	ll_generate_cpu_info_string(&read_buf,&buf_size);
+	printk("*data: %d, buf_size=%d, count = %ld", *data, buf_size, count);
+	if(*data >= buf_size) {
+		kfree(read_buf);
+		goto out;
+	}
+
+	if(*data + count > read_buf) {
+		len = read_buf - *data;
+	}
+
+
+	if((ret = copy_to_user(buffer, read_buf,buf_size ) != 0)) {
 		printk(KERN_INFO "copy to user failed\n");
 		return -EFAULT;
 	}
+	*data += len - ret;
+	retVal = len - ret;
 	kfree(read_buf);
-	if(count == 0) {
-		temp = procfs_buffer_size;
-	}
-	return count;
+	out:
+		return retVal;
 }
 /* Associating appropriate proc file system read write function
  * to read and write into /proc/mp1/status

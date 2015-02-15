@@ -49,6 +49,6 @@ int main(int argc, char* argv[])
 		}
 	}
 	}
-    system("cat /proc/mp1/status");
+    	system("cat /proc/mp1/status");
 	return 0;
 }

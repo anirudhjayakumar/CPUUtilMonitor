@@ -48,9 +48,9 @@ void work_handler( struct work_struct *work )
 //	Works *wk = (Works*)work;
 	/*Insert code here for updation of CPU Time*/
     // get the pids
-	printk(KERN_INFO "work handler called\n");
+	//printk(KERN_INFO "work handler called\n");
 	ll_get_pids(&pids,&count);
-	printk(KERN_INFO "PID count = %d", count);
+	//printk(KERN_INFO "PID count = %d", count);
     for (index = 0; index <count; ++index)
 	{
 
@@ -58,12 +58,12 @@ void work_handler( struct work_struct *work )
 
 		if( get_cpu_use(pid,&cpu_time) == SUCCESS )
 		{
-			printk(KERN_INFO "PID: %d CPU TIME: %lu\n", pid,cpu_time);
+			//printk(KERN_INFO "PID: %d CPU TIME: %lu\n", pid,cpu_time);
 			ll_update_time(pid,cpu_time);
 		}
 		else
 		{ 
-			printk(KERN_INFO "get_cpu_use() failed");
+			//printk(KERN_INFO "get_cpu_use() failed");
 			ll_delete_pid(pid);
 		}
 	}
@@ -74,25 +74,25 @@ void work_handler( struct work_struct *work )
 /** function to create workqueue*/
 void create_work_queue(void)
 {
-	printk(KERN_INFO "workqueue creation called\n");
+	//printk(KERN_INFO "workqueue creation called\n");
 	my_wq= create_workqueue( "mp1_workqueue\n" );
 	if ( !my_wq ) {
-		printk( "Error!Workqueue could not be created\n" );
+		//printk( "Error!Workqueue could not be created\n" );
 		return ;
 	}
 	work = (struct work_struct*)kmalloc(sizeof(struct work_struct), GFP_KERNEL );
 	if ( work ) {
 		
-	    printk(KERN_INFO "INIT_WORK\n");
+	    //printk(KERN_INFO "INIT_WORK\n");
 		INIT_WORK( work, work_handler );
 		//wk1->number = 1;
 	}
 }
 
 void timer_callback(unsigned long data){
-	printk(KERN_INFO "timer call work\n");
+	//printk(KERN_INFO "timer call work\n");
 	queue_work( my_wq, work );
-	printk(KERN_INFO "modify timer\n");
+	//printk(KERN_INFO "modify timer\n");
 	mod_timer(&intr_timer,jiffies+5*HZ);
 }
 /* Function to Initialize Timer*/
@@ -102,23 +102,23 @@ void initialize_timer(void){
 	intr_timer.expires = jiffies+wait_time*HZ;
 	intr_timer.data = intr_timer.expires;
 	intr_timer.function = timer_callback;
-	printk(KERN_INFO "adding timer\n");
+	//printk(KERN_INFO "adding timer\n");
 	add_timer(&intr_timer); 
 }
 
 int init_workqueue(void)
 {
-	printk(KERN_INFO "workqueue init called\n");
+	//printk(KERN_INFO "workqueue init called\n");
 	initialize_timer();//Initializing timer
 	create_work_queue(); //calling workqueue
-	printk(KERN_INFO "workqueue init done\n");
+	//printk(KERN_INFO "workqueue init done\n");
 	//queue_work( my_wq, &wk1->work );
 	return 0;
 }
 
 void cleanup_workqueue(void)
 {
-    printk(KERN_INFO "cleanup_workqueue called\n");
+    //printk(KERN_INFO "cleanup_workqueue called\n");
 	del_timer(&intr_timer);
 	flush_workqueue(my_wq);
 	cancel_work_sync( work );

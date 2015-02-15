@@ -35,16 +35,16 @@ int ll_list_size(void) {
 
 int ll_initialize_list(void)
 { 
-	printk(KERN_INFO "Linklist initialize begin\n");
+	//printk(KERN_INFO "Linklist initialize begin\n");
 	// intialize the linklist
 	INIT_LIST_HEAD(&proc_list.list);
 	
-	printk(KERN_INFO "Linklist initialize done\n");
+	//printk(KERN_INFO "Linklist initialize done\n");
 	// initialize the rwsem
-	printk(KERN_INFO "RW lock initialize begin\n");
+	//printk(KERN_INFO "RW lock initialize begin\n");
 	sem  = (struct rw_semaphore*)kmalloc(sizeof(struct rw_semaphore),GFP_KERNEL);
 	init_rwsem(sem);
-	printk(KERN_INFO "RW lock initialize done\n");
+	//printk(KERN_INFO "RW lock initialize done\n");
 	return SUCCESS;
 }
 
@@ -72,8 +72,8 @@ int ll_generate_cpu_info_string(char **buf, int *count_)
 	}
 	(*buf)[count] = '\0';
 	up_read(sem); // release read lock
-	printk(KERN_INFO "===========generate string(): count=%d\n", count + 1);
-	printk(KERN_INFO "===========String: %s\n",*buf);
+	//printk(KERN_INFO "===========generate string(): count=%d\n", count + 1);
+	//printk(KERN_INFO "===========String: %s\n",*buf);
     *count_ = count + 1;
 	return SUCCESS;
 
@@ -83,25 +83,25 @@ int ll_generate_cpu_info_string(char **buf, int *count_)
 int ll_update_time(int pid,unsigned long cpu_use)
 {
 	struct process_info *proc_iter = NULL;
-	printk(KERN_INFO "update_time starts for pid=%d\n",pid);
+	//printk(KERN_INFO "update_time starts for pid=%d\n",pid);
 	down_write(sem); // acquire write lock
 	list_for_each_entry(proc_iter,&proc_list.list,list) {
 		 if( proc_iter->pid == pid )
 		 {
 			 proc_iter->cpu_time = cpu_use;
-			 printk(KERN_INFO "update time ends for pid=%d\n",pid);
+			 //printk(KERN_INFO "update time ends for pid=%d\n",pid);
 		 	 up_write(sem);
 			 return SUCCESS;
 		 }
 	}
 	up_write(sem); // release write lock
-	printk(KERN_INFO "update_time() pid=%d not found in the list\n",pid);
+	//printk(KERN_INFO "update_time() pid=%d not found in the list\n",pid);
 	return FAIL;
 }
 
 int ll_add_to_list(int pid)
 {
-	printk(KERN_INFO "adding pid=%d to list\n",pid);
+	//printk(KERN_INFO "adding pid=%d to list\n",pid);
 	if( ll_is_pid_in_list(pid) == FALSE )
 	{
 		struct process_info *new_proc = NULL;
@@ -111,13 +111,13 @@ int ll_add_to_list(int pid)
 		down_write(sem);
 		list_add_tail(&(new_proc->list),&(proc_list.list));
 		up_write(sem);
-		printk(KERN_INFO "added pid=%d to list\n",pid);
+		//printk(KERN_INFO "added pid=%d to list\n",pid);
 		list_size++;
 		return SUCCESS;
 	}
 	else
 	{
-		printk(KERN_INFO "pid=%d found to be duplicate. not added to the list\n",pid);
+		//printk(KERN_INFO "pid=%d found to be duplicate. not added to the list\n",pid);
 		return DUPLICATE;
 	}
 }
@@ -125,7 +125,7 @@ int ll_add_to_list(int pid)
 int ll_cleanup(void)
 {
 	struct process_info *proc_iter = NULL;
-	printk(KERN_INFO "linklist cleanup starts\n");
+	//printk(KERN_INFO "linklist cleanup starts\n");
 	down_write(sem);
 	list_for_each_entry(proc_iter,&proc_list.list,list) {
 		list_del(&proc_iter->list);
@@ -133,7 +133,7 @@ int ll_cleanup(void)
 	}
 	up_write(sem);
 	kfree(sem);
-	printk(KERN_INFO "linklist cleanup ends\n");
+	//printk(KERN_INFO "linklist cleanup ends\n");
     return SUCCESS;
 }
 
@@ -143,19 +143,19 @@ int ll_get_pids(int **pids, int *count)
 	struct process_info *proc_iter = NULL;
 	int index = 0;
 	*count = list_size;
-	printk(KERN_INFO "linklist get_pids()\n");
+	//printk(KERN_INFO "linklist get_pids()\n");
 	if ( list_size > 0 )
 	{
 		*pids = (int *)kmalloc(sizeof(int)*list_size,GFP_KERNEL);
-		printk(KERN_INFO "linklist get_pids() trying to acquire lock\n");
+		//printk(KERN_INFO "linklist get_pids() trying to acquire lock\n");
 		down_read(sem); // acquire read lock
-		printk(KERN_INFO "linklist get_pids() lock acquired\n");
+		//printk(KERN_INFO "linklist get_pids() lock acquired\n");
 		list_for_each_entry(proc_iter,&proc_list.list,list) {
 			(*pids)[index++] = proc_iter->pid;
 		}
 		up_read(sem);
 
-	    printk(KERN_INFO "linklist get_pids() lock release\n");
+	    //printk(KERN_INFO "linklist get_pids() lock release\n");
 	}
 	return SUCCESS;
 }
@@ -183,6 +183,6 @@ void ll_print_list(void)
 	char **buf = NULL;
 	int count = 0;
 	ll_generate_cpu_info_string(buf,&count);
-	printk(KERN_INFO "%s",*buf);
+	//printk(KERN_INFO "%s",*buf);
 	kfree(*buf);
 }
