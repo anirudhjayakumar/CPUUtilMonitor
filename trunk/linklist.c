@@ -83,7 +83,8 @@ int ll_update_time(int pid,unsigned long cpu_use)
 		 {
 			 proc_iter->cpu_time = cpu_use;
 			 printk(KERN_INFO "update time ends for pid=%d\n",pid);
-		 	 return SUCCESS;
+		 	 up_write(sem);
+			 return SUCCESS;
 		 }
 	}
 	up_write(sem); // release write lock
@@ -99,7 +100,6 @@ int ll_add_to_list(int pid)
 		struct process_info *new_proc = NULL;
 		new_proc = (struct process_info *)kmalloc(sizeof(struct process_info),GFP_KERNEL);
         new_proc->pid = pid;
-		new_proc->pid = 0;
 		INIT_LIST_HEAD(&new_proc->list);
 		down_write(sem);
 		list_add_tail(&(new_proc->list),&(proc_list.list));
@@ -119,10 +119,12 @@ int ll_cleanup(void)
 {
 	struct process_info *proc_iter = NULL;
 	printk(KERN_INFO "linklist cleanup starts\n");
+	down_write(sem);
 	list_for_each_entry(proc_iter,&proc_list.list,list) {
 		list_del(&proc_iter->list);
 		kfree(proc_iter);
 	}
+	up_write(sem);
 	kfree(sem);
 	printk(KERN_INFO "linklist cleanup ends\n");
     return SUCCESS;
@@ -134,14 +136,19 @@ int ll_get_pids(int **pids, int *count)
 	struct process_info *proc_iter = NULL;
 	int index = 0;
 	*count = list_size;
+	printk(KERN_INFO "linklist get_pids()\n");
 	if ( list_size > 0 )
 	{
 		*pids = (int *)kmalloc(sizeof(int)*list_size,GFP_KERNEL);
+		printk(KERN_INFO "linklist get_pids() trying to acquire lock\n");
 		down_read(sem); // acquire read lock
+		printk(KERN_INFO "linklist get_pids() lock acquired\n");
 		list_for_each_entry(proc_iter,&proc_list.list,list) {
 			(*pids)[index++] = proc_iter->pid;
 		}
 		up_read(sem);
+
+	    printk(KERN_INFO "linklist get_pids() lock release\n");
 	}
 	return SUCCESS;
 }
@@ -155,6 +162,8 @@ int ll_delete_pid(int pid)
 		{
 			list_del(&proc_iter->list);
 			kfree(proc_iter);
+			list_size--;
+			up_write(sem);
 			return SUCCESS;
 		}
 	}

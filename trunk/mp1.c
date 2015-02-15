@@ -15,12 +15,11 @@
 #include <linux/slab.h>
 #include "mp1_given.h"
 #include "linklist.h"
-
+#include "workqueue.h"
 
 #define DEBUG 1
 #define PROCFS_MAX_SIZE	1024
 
-static char procfs_buffer[PROCFS_MAX_SIZE];
 static unsigned long procfs_buffer_size = 0;
 static unsigned long temp = 0;
 
@@ -39,23 +38,17 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer, size
 	char *proc_buffer;
 	long lpid;
 	int pid;
-	procfs_buffer_size = count;
-	temp = procfs_buffer_size;
-	if(procfs_buffer_size > PROCFS_MAX_SIZE) {
-		procfs_buffer_size = PROCFS_MAX_SIZE;
-	}
-	proc_buffer = (char *)kmalloc(count + 1, GFP_KERNEL);
-	if(copy_from_user(proc_buffer, buffer, procfs_buffer_size)) {
+	proc_buffer = (char *)kmalloc(count, GFP_KERNEL);
+	if(copy_from_user(proc_buffer, buffer, count)) {
 		kfree(proc_buffer);
 		return -EFAULT;
 	}
-	strict_strtol (procfs_buffer, 10,&lpid);
+	proc_buffer[count] = '\0';
+	strict_strtol (proc_buffer, 10,&lpid);
 	pid = (int)lpid;
-    	printk(KERN_INFO "PID: %d",pid);
 	ll_add_to_list(pid);
-	printk(KERN_INFO "PID: %s\n", buffer);
 	kfree(proc_buffer);
-	return procfs_buffer_size;
+	return count;
 
 }
 
@@ -146,6 +139,7 @@ static int __init mp1_init(void)
    newentry = proc_filesys_entries("status", "mp1");
    
    ll_initialize_list();
+   init_workqueue();   
    printk(KERN_ALERT "MP1 MODULE LOADED\n");
    return 0;   
 }
@@ -158,7 +152,8 @@ static void __exit mp1_exit(void)
    #endif
    /* Step 2: Removing proc file system on module unload */
    remove_entry("status", "mp1");
-   //ll_cleanup();
+   ll_cleanup();
+   cleanup_workqueue();
    printk(KERN_ALERT "MP1 MODULE UNLOADED\n");
 }
 
