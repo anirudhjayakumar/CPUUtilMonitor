@@ -17,11 +17,11 @@ static struct workqueue_struct *my_wq;
 //creating work element:- work
 struct work_struct *work;
 
-//THIS FUNCTION RETURNS 0 IF THE PID IS VALID AND THE CPU TIME IS SUCCESFULLY RETURNED BY THE PARAMETER CPU_USE. OTHERWISE IT RETURNS -1
 void modify_timer(void)
 {
 	mod_timer(&intr_timer, jiffies+5*HZ);	
 }
+//THIS FUNCTION RETURNS 0 IF THE PID IS VALID AND THE CPU TIME IS SUCCESFULLY RETURNED BY THE PARAMETER CPU_USE. OTHERWISE IT RETURNS -1
 int get_cpu_use(int pid, unsigned long *cpu_use)
 {
    struct task_struct* task;
@@ -126,8 +126,8 @@ void cleanup_workqueue(void)
 {
     //printk(KERN_INFO "cleanup_workqueue called\n");
 	del_timer(&intr_timer);
-	flush_workqueue(my_wq);
 	cancel_work_sync( work );
+        flush_workqueue(my_wq);
 	destroy_workqueue( my_wq );
 }
 
