@@ -20,8 +20,6 @@
 #define DEBUG 1
 #define PROCFS_MAX_SIZE	1024
 
-static unsigned long procfs_buffer_size = 0;
-static unsigned long temp = 0;
 
 typedef struct proc_dir_entry procfs_entry;
 procfs_entry* newproc = NULL;
@@ -75,22 +73,22 @@ static ssize_t procfile_read (struct file *file, char __user *buffer, size_t cou
 	//printk(KERN_INFO "=============read buffer: %s",read_buf);
 
 	ll_generate_cpu_info_string(&read_buf,&buf_size);
-	printk("*data: %d, buf_size=%d, count = %ld", *data, buf_size, count);
+	printk("*data: %d, buf_size=%d, count = %ld", (int)(*data), buf_size, count);
 	if(*data >= buf_size) {
 		kfree(read_buf);
 		goto out;
 	}
 
-	if(*data + count > read_buf) {
-		len = read_buf - *data;
+	if((int)(*data) + count > buf_size) {
+		len = buf_size - (int)(*data);
 	}
 
 
-	if((ret = copy_to_user(buffer, read_buf,buf_size ) != 0)) {
+	if((ret = copy_to_user(buffer, read_buf,buf_size) != 0)) {
 		printk(KERN_INFO "copy to user failed\n");
 		return -EFAULT;
 	}
-	*data += len - ret;
+	*data += (loff_t)(len - ret);
 	retVal = len - ret;
 	kfree(read_buf);
 	out:
