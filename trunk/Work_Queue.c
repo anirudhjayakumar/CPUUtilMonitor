@@ -62,7 +62,7 @@ void work_handler( struct work_struct *work )
 		if( get_cpu_use(pid,&cpu_time) == SUCCESS )
 		{
 			//printk(KERN_INFO "PID: %d CPU TIME: %lu\n", pid,cpu_time);
-			ll_update_time(pid,cpu_time);
+			ll_update_time(pid,jiffies_to_msecs(cputime_to_jiffies(cpu_time))); 
 		}
 		else
 		{ 

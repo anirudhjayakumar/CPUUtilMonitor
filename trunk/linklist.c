@@ -68,7 +68,7 @@ int ll_generate_cpu_info_string(char **buf, int *count_)
 	*buf = (char *)kmalloc(BUF_SIZE, GFP_KERNEL);
 	down_read(sem); // acquire read lock
 	list_for_each_entry(proc_iter,&proc_list.list,list) {
-		count += sprintf(*buf+count,"%d %lu\n",proc_iter->pid,proc_iter->cpu_time);
+		count += sprintf(*buf+count,"%d : %lu ms\n",proc_iter->pid,proc_iter->cpu_time);
 	}
 	(*buf)[count] = '\0';
 	up_read(sem); // release read lock
