@@ -1,0 +1,206 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amssymb}
+\usepackage{verbatim}
+\usepackage{alltt}
+\usepackage{fancyvrb}
+\usepackage[svgnames,xcdraw,table]{xcolor}
+\usepackage{multirow}
+\usepackage{xnewcommand}
+\usepackage{longtable}
+\usepackage[font=small,skip=1pt]{caption}
+\usepackage{subcaption, balance, appendix}
+\usepackage{geometry, setspace, fullpage}
+\usepackage{epstopdf}
+\usepackage{graphicx}
+
+\begin{document}
+
+\newcommand[\global]{\rcow}{\rowcolors[\hline]{1}{gray!10}{Snow}\arrayrulecolor{Black}\setlength\arrayrulewidth{1pt}}
+
+\title{CS423 : MP1 Documentation}
+\author{{\bf Group 2}: Debjit Pal (dpal2), Anirudh Jayakumar (ajayaku2), Neha Chaube (nchaub2) \\ and Divya Balakrishna (dbalakr2)}
+\date{\today}
+
+\maketitle
+
+\section{Introduction}
+We describe the important data structures and the functionalities of the functions we created to build up this kernel module. We used a multi-file approach to keep the modularity of the design and to make sure that all the group members can work in parallel without harming others' code. Hence we needed to change the provided {\tt Makefile} file. In Section~\ref{subsec:Files}, we demonstrate the different files relevant to this work, in Section~\ref{subsec:Make}, we describe the changes that we made in the {\tt Makefile}. In Section~\ref{subsec:Proc}, we implement the creation of {\tt proc} file system, the APIs to {\tt read} from  and {\tt write} into the {\tt proc} filesystem. Section~\ref{subsec:Link} describes the usage of the kernel linked-list and the necessary functions that we wrote to implement that. Section~\ref{subsec:Lock} details the lock type and the reason for choosing it. Section~\ref{subsec:WQ} describes the implementation of the {\tt work queue} and {\tt timer}. Finally, Section~\ref{subsec:LC} enlists our learning from this machine problem, details how to run the program and concludes the document.
+
+\subsection{Files included in the MP1 Project}\label{subsec:Files}
+
+\begin{table*}[h]
+  \centering
+  \rcow
+  \caption{File list included in the project}
+  \begin{tabular}{|p{4cm}|p{8cm}|}
+    {\tt Makefile}  &  To build up the Kernel module and user application called {\em my\_factorial}  \\
+    {\tt mp1.c}     &  Includes the kernel init and exit modules, proc file creation, proc file read and write function  \\
+    {\tt linklist.c}&  Implements the update function for the kernel linklist\\
+    {\tt linklist.h}&  Contains the function declarations for the link-list implementation\\
+    {\tt Work\_Queue.c}  & Implements the workqueue, timer, interrupt using the two halves concept \\
+    {\tt workqueue.h}   & Contains the function declarations of for the workqueue and timer\\
+    {\tt my\_factorial.c}    & Implementation of the user application \\
+    {\tt my\_factorial.h}    & Header file for the user application\\
+  \end{tabular}
+\end{table*}
+
+\subsection{Important Changes in Makefile}\label{subsec:Make}
+
+In the given Makefile we had the following line where only a single object file (namely {\tt mp.o}) created from the single source file (namely {\tt mp1.c}) and in turn a kernel module is created (namely {\tt mp1.ko}).
+\begin{verbatim}
+ obj-m:= mp1.o
+\end{verbatim}
+Since we took a multi-file approach to make sure each of the group member can work on different parts of the implementation, we changed the Makefile in the following way:
+\begin{verbatim}
+ obj-m += mp1_final.o
+ mp1_final-objs := linklist.o Work_Queue.o mp1.o
+\end{verbatim}
+The name of the object module has been changed to {\tt mp1\_final.o} as mentioned in the {\tt obj-m}. That {\tt mp\_final.o} contains three different object modules as mentioned in the {\tt mp1\_final-objs}. The {\em ordering} of the object module is important here because mp1.o contains a call to a linkedlist function that is defined in linklist.o. Similarly, Work\_Queue.o contains function call that is defined in linklist.o. Hence, linklist.c needs to be compiled before else gcc will give a compiler error message {\tt "implicit function declaration found"}. Further, mp1.c contains the {\tt MODULE\_LICENSE} declaration and hence it needs to be compiled at the very end after all other C files are compiled else gcc will pop an error message {\tt MODULE\_LICENSE declaration not found}. If we load such a kernel module without {\tt MODULE\_LICENSE} definition, the kernel will get {\em tainted} and may crash. In our project, the name of the kernel module is {\tt mp1\_final.ko} which we load in the kernel using {\em insmod} command.
+
+\subsection{Proc File System Creation}\label{subsec:Proc}
+
+The kernel module {\tt mp1\_final.ko} on being loaded into the kernel, the {\tt \_\_init} functions creates the {\bf proc} file system using {\bf proc\_filesystem\_entries} function. {\bf proc\_filesystem\_entries} first creates a directory called {\bf mp1} under the {\bf /proc} filesystem using {bf proc\_mkdir()} and then it uses {\bf proc\_create()} to create the status file {\bf status} at the location {\bf /proc/mp1} with a {\bf 0666} permission so the user application can read and write at the status file. The {\bf /proc/mp1/status} has an associated {\tt read} and {\tt write} funcntion namely {\bf procfile\_read} and {\bf procfile\_write} respectively. Both of them are defined using {\bf file\_operations} structure. The {\tt \_\_init}~function also initializes the kernel linkedlist and the workqueue.
+
+The {\bf procfile\_writes} data from user space using the API {\bf copy\_from\_user()} from the user buffer named {\tt buffer} to the dynamically created proc file system buffer named {\tt procfs\_buffer}. If all the user space data cannot be copied into the proc file system buffer, a {\tt -EFAULT} signal is sent. On success, the process ID namely {\tt pid}  is added to the kernel linked list and the bytes amount that are copied from user space to kernel space is returned. 
+
+The {\bf procfile\_read} needs a tricky implementation. The function is aware about the fact that it has read the proc file system buffer completely and no more data is left to be transferred to user space application. Otherwise user space application (for example "cat /proc/mp1/status" command) would output the content of the {\bf /proc/mp1/status} indefinitely. We use {\bf copy\_to\_user()} to copy data from proc filesystem buffer to user space buffer. When {\bf cat /proc/mp1/status} is executed in user space, {\bf procfile\_read} outputs the PID of the currently registered processes and the CPU time of the processes.
+
+On kernel module being unloaded from the kernel, {\tt \_\_exit} function is called. This function calls {\bf remove\_entry} to remove proc file system entries using {\bf remove\_proc\_entry()}. The {\tt \_\_exit} also cleans up the linkedlist from kernel memory, destroys the workqueue and the timer thread. A summary of the implemented functions are given in the Table~\ref{table:Proc}.
+
+\begin{table*}[h]
+  \centering
+  \rcow
+  \caption{List of functions to insert and remove kernel module, read and write proc file system\label{table:Proc}}
+  \begin{tabular}{|p{7cm}|p{8cm}|}
+    {\tt static int \_\_init mp1\_init(void);}  &  Initializing the kernel module, initialize linkedlist and initialize timer.  \\
+    {\tt procfs\_entry* proc\_filesys\_entries(char *procname, char *parent);}     &  Creates the {\bf mp1} directory in {\bf /proc} and the status file in {\bf /proc/mp1}  \\
+    {\tt static ssize\_t procfile\_read (struct file *file, char \_\_user *buffer, size\_t count, loff\_t *data);}&  Used to read data from kernel space to user space\\
+    {\tt static ssize\_t procfile\_write(struct file *file, const char \_\_user *buffer, size\_t count, loff\_t *data);}&  Used to read data from user space to kernel space\\
+    {\tt static void remove\_entry(char *procname, char *parent);}  & Removes the status file and the {\bf mp1} directory from {\bf proc} filesystem   \\
+  \end{tabular}
+\end{table*}
+
+
+\subsection{Functionalities of Linklist}\label{subsec:Link}
+
+We use a linklist data structure to store the PIDs and their CPU usage time. The linklist representing the process structure is called  {\tt process\_info }and its  declaration is shown below.
+
+\begin{verbatim}
+struct process_info {
+    int pid;
+    unsigned long cpu_time;
+    struct list_head list; 
+};
+\end{verbatim}
+This data structure is encapsulated through a set of interfaces available in the {\tt linklist.h} header file. These functions are used by the proc read/write module and the work queue module to interface with the linklist. The list of interfaces and their functionalities are explained in the Table~\ref{table:linkfunc}. 
+
+\begin{table*}[h]
+  \centering
+  \rcow
+  \caption{List of functions to access the linklist\label{table:linkfunc}}
+  \begin{tabular}{|p{7cm}|p{8cm}|}
+    {\tt int ll\_initialize\_list(void);}  &  Initializes the linklist and should be called before calling any other linklist function. Ideally, this should be called from the kernel module init function.  \\
+    {\tt int ll\_add\_to\_list(int pid);}     &  Adds a PID to list. Returns DUPLICATE if the entry is already present  \\
+    {\tt int ll\_generate\_cpu\_info\_string(char **buf,int *count);}&  Generates a string with all the PIDs and their CPU times\\
+    {\tt int ll\_update\_time(int pid, unsigned long cpu\_use);}&  Updates the CPU time of a process\\
+    {\tt int ll\_cleanup(void);}  & Frees all memory created during initialize. Should be called from module\_exit function  \\
+    {\tt int ll\_is\_pid\_in\_list(int pid);}   & Checks if a PID is in the list. Return PASS/FAIL \\
+    {\tt int ll\_get\_pids(int **pids, int *count);}    & Gets an array of PIDs and their count. Caller should free the array after use. \\
+    {\tt int ll\_delete\_pid(int pid);}    & Deletes a PID from the list\\
+    {\tt int ll\_list\_size(void);}    & Returns the size of the list \\
+    {\tt void ll\_print\_list(void);}    & Prints the list to kernel logs\\
+  \end{tabular}
+\end{table*}
+
+
+\subsection{Locking mechanisms}\label{subsec:Lock}
+We use a read-write semaphore to synchronize the access to the linklist. The read-write semaphore works as follows.
+\begin{itemize}
+  \item Allows multiple concurrent readers. In our case, we could have the interrupt(bottom half) and the proc read/write module access the linklist. These accesses can occur concurrently. 
+  \item Only one writer can access the critical section.  
+  \item Writers get priority. This means that if a writer tries to enter the critical section then no reader will be allowed to access the critical section till all writers have completed their tasks. This could lead to reader starvation. 
+\end{itemize}
+
+The read-write semaphore is ideal for situations where most of the access to the data are reads with few write access in between. In our kernel module, the linklist is only updated on two occasions a) every 5 seconds with the new CPU time and b) when a new process is registered by writing the PID to the proc entry.
+
+
+\subsection{Implementation and working principles of Work Queue, Timer and Interrupt Handler: Two Halves Approach}\label{subsec:WQ}
+
+The necessary functions that we implemented are enlisted in Table~\ref{table:worktable} along with their functionalities. The interrupt handler needs to perform tasks quickly and also not keep interrupts blocked for a long period of time. Keeping this in mind, the {\em Two Halves approach} is used. The Top Half is used to schedule the interrupt and cannot sleep while the Bottom Half is used to execute the work once it receives an interrupt from the Top half. In this case, the Kernel timer(Top Half) is being used to schedule the timer every five seconds and once the timer is triggered, the bottom half is called which updates CPU time of the registered processes stored in the linked list.
+
+\begin{table*}[h]
+  \centering
+  \rcow
+  \caption{List of functions for WorkQueue and Timer\label{table:worktable}}
+  \begin{tabular}{|p{7cm}|p{8cm}|}
+    {\tt void initialize\_timer(void);}  &  Used to initialize timer and set timer structure parameters.  \\
+    {\tt void timer\_callback(unsigned long data);}     &  Used to submit work to the workqueue and modify timer if user process is running.  \\
+    {\tt void modify\_timer(void);} &  Used to activate an active timer.\\
+    {\tt int get\_cpu\_use(int pid, unsigned long *cpu\_use);}   &  Used to fetch the CPU time of a particular process\\
+    {\tt void work\_handle(struct work\_struct *work);}  & Used to update cpu time in linklist \\
+    {\tt void create\_work\_queue(void);}   & Used to create workqueue.\\
+    {\tt int init\_workqueue(void);}    &   Used to call {\tt initialize\_timer()} and {\tt create\_work\_queue()}. \\
+    {\tt void cleanup\_workqueue();}    & Used to flush workqueue, flush any exisiting work using {\tt cancel\_delay\_work()} API, delete timer and workqueue\\
+  \end{tabular}
+\end{table*}
+
+The Top Half consists of Kernel Timer which triggers an interrupt to the bottom half every 5 seconds. Initialization of timer has been done in the {\tt \_init} function using {\tt initialize\_timer()}. The timer structure parameters are initialized in this function. The timer expiry parameter is set to 5 seconds using jiffies. Data can be passed to the timer handler using data parameter of the timer. The timer callback function has to be registered with the timer structure. The timer becomes inactive after the {\tt timer\_callback} is executed. To activate it again, {\tt mod\_timer()} is used.
+
+The timer interrupt handler of Top Half wakes up the Bottom Half which consists of a work function {\tt work\_handler( struct work\_struct *work )} in a workqueue. Work is submitted to the workqueue when the interrupt is triggered. The {\tt work\_handler()} gets the pids of all the processes running in the user space and registered in this kernel module. For each running process, the CPU time is updated and stored in the linked list.
+
+
+\subsection{Learning and Conclusion}\label{subsec:LC}
+We have learnt the following from this MP:
+\begin{enumerate}
+    \item Handling of proc file system, data exchanges between kernel space and user space
+    \item Usage of mutex locks to protect kernel link list data from being corrupted and to make sure read and write operations are done atomically.
+    \item Two halves approach to handle interrupt
+\end{enumerate}
+
+\noindent We faced the following problem while integrating the different parts of the kernel module code and debugged
+\begin{enumerate}
+    \item Earlier {\bf procfile\_read} was reading the status file indefinitely. This has been debugged using a offset value which keeps track of the amount of the data that has been already sent to the user space.
+\end{enumerate}
+
+\subsubsection{How to run the program}
+
+Please use the following steps to compile, insert and remove the kernel module and to run our application {\em my\_factorial } program.
+
+\begin{enumerate}
+    \item To compile the kernel module and the user application:
+        \begin{verbatim}
+         # make
+        \end{verbatim}
+        This will create {\tt mp1\_final.ko} kernel object module and the user application {\em my\_factorial}.
+    \item To insert the kernel module:
+        \begin{verbatim}
+         # sudo insmod mp1_final.ko
+        \end{verbatim}
+        This should print a few confirmation messages in the {\bf /var/log/kern/log} file confirming that the kernel module has been loaded successfully.
+    \item To run the user application:
+        \begin{verbatim}
+         # ./my_factorial 10 (factorial of the argument is calculated)
+        \end{verbatim}
+    \item To output the CPU time of the running processes in konsole:
+        \begin{verbatim}
+         # cat /proc/mp1/status
+        \end{verbatim}
+    \item To unload the kernel module:
+        \begin{verbatim}
+         # sudo rmmod mp1_final
+        \end{verbatim}
+        This will print a few confirmation messages in the {\bf /var/log/kern.log} file confirming that the kernel module has been unloaded successfully.
+\end{enumerate}
+
+\begin{figure}
+	\includegraphics[scale=0.4]{screenshot.eps}
+	\caption{Running {\bf cat} command\label{fig:cat}}
+\end{figure}
+
+A screenshot of the output when running the {\bf cat /proc/mp1/status} is given in Figure~\ref{fig:cat}:
+
+
+
+
+\end{document}
