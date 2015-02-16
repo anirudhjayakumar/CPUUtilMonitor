@@ -18,7 +18,10 @@ static struct workqueue_struct *my_wq;
 struct work_struct *work;
 
 //THIS FUNCTION RETURNS 0 IF THE PID IS VALID AND THE CPU TIME IS SUCCESFULLY RETURNED BY THE PARAMETER CPU_USE. OTHERWISE IT RETURNS -1
-
+void modify_timer(void)
+{
+	mod_timer(&intr_timer, jiffies+5*HZ);	
+}
 int get_cpu_use(int pid, unsigned long *cpu_use)
 {
    struct task_struct* task;
@@ -92,8 +95,11 @@ void create_work_queue(void)
 void timer_callback(unsigned long data){
 	//printk(KERN_INFO "timer call work\n");
 	queue_work( my_wq, work );
-	//printk(KERN_INFO "modify timer\n");
-	mod_timer(&intr_timer,jiffies+5*HZ);
+	printk(KERN_INFO "modify timer\n");
+	if((ll_list_size())>0){
+		mod_timer(&intr_timer,jiffies+5*HZ);
+	}
+	//mod_timer(&intr_timer,jiffies+5*HZ);
 }
 /* Function to Initialize Timer*/
 void initialize_timer(void){

@@ -47,6 +47,10 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer, size
 	strict_strtol (proc_buffer, 10,&lpid);
 	pid = (int)lpid;
 	ll_add_to_list(pid);
+	if((ll_list_size()) == 1)
+	{
+		modify_timer();
+	}
 	kfree(proc_buffer);
 	return count;
 
